@@ -279,12 +279,15 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
         return ratingBar;
     }
 
-    @Override
-    public void show() {
-
+    public void showWithSessionCheck() {
         if (checkIfSessionMatches(session)) {
             super.show();
         }
+    }
+
+    public void showFeedbackOnly() {
+        super.show();
+        openForm();
     }
 
     private boolean checkIfSessionMatches(int session) {
