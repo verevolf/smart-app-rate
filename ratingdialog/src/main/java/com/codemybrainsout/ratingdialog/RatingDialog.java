@@ -8,11 +8,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v7.app.AppCompatDialog;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
@@ -26,6 +22,9 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatDialog;
+import androidx.core.content.ContextCompat;
+
 /**
  * Created by ahulr on 24-10-2016.
  */
@@ -34,7 +33,7 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
 
     private static final String SESSION_COUNT = "session_count";
     private static final String SHOW_NEVER = "show_never";
-    private String MyPrefs = "RatingDialog";
+    private static final String PREFS = "rating.prefs";
     private SharedPreferences sharedpreferences;
 
     private Context context;
@@ -47,9 +46,8 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
 
     private float threshold;
     private int session;
-    private boolean thresholdPassed = true;
 
-    public RatingDialog(Context context, Builder builder) {
+    private RatingDialog(Context context, Builder builder) {
         super(context);
         this.context = context;
         this.builder = builder;
@@ -66,17 +64,17 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
         getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
         setContentView(R.layout.dialog_rating);
 
-        tvTitle = (TextView) findViewById(R.id.dialog_rating_title);
-        tvNegative = (TextView) findViewById(R.id.dialog_rating_button_negative);
-        tvPositive = (TextView) findViewById(R.id.dialog_rating_button_positive);
-        tvFeedback = (TextView) findViewById(R.id.dialog_rating_feedback_title);
-        tvSubmit = (TextView) findViewById(R.id.dialog_rating_button_feedback_submit);
-        tvCancel = (TextView) findViewById(R.id.dialog_rating_button_feedback_cancel);
-        ratingBar = (RatingBar) findViewById(R.id.dialog_rating_rating_bar);
-        ivIcon = (ImageView) findViewById(R.id.dialog_rating_icon);
-        etFeedback = (EditText) findViewById(R.id.dialog_rating_feedback);
-        ratingButtons = (LinearLayout) findViewById(R.id.dialog_rating_buttons);
-        feedbackButtons = (LinearLayout) findViewById(R.id.dialog_rating_feedback_buttons);
+        tvTitle = findViewById(R.id.dialog_rating_title);
+        tvNegative = findViewById(R.id.dialog_rating_button_negative);
+        tvPositive = findViewById(R.id.dialog_rating_button_positive);
+        tvFeedback = findViewById(R.id.dialog_rating_feedback_title);
+        tvSubmit = findViewById(R.id.dialog_rating_button_feedback_submit);
+        tvCancel = findViewById(R.id.dialog_rating_button_feedback_cancel);
+        ratingBar = findViewById(R.id.dialog_rating_rating_bar);
+        ivIcon = findViewById(R.id.dialog_rating_icon);
+        etFeedback = findViewById(R.id.dialog_rating_feedback);
+        ratingButtons = findViewById(R.id.dialog_rating_buttons);
+        feedbackButtons = findViewById(R.id.dialog_rating_feedback_buttons);
 
         init();
     }
@@ -119,16 +117,11 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
         }
 
         if (builder.ratingBarColor != 0) {
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT) {
-                LayerDrawable stars = (LayerDrawable) ratingBar.getProgressDrawable();
-                stars.getDrawable(2).setColorFilter(ContextCompat.getColor(context, builder.ratingBarColor), PorterDuff.Mode.SRC_ATOP);
-                stars.getDrawable(1).setColorFilter(ContextCompat.getColor(context, builder.ratingBarColor), PorterDuff.Mode.SRC_ATOP);
-                int ratingBarBackgroundColor = builder.ratingBarBackgroundColor != 0 ? builder.ratingBarBackgroundColor : R.color.grey_200;
-                stars.getDrawable(0).setColorFilter(ContextCompat.getColor(context, ratingBarBackgroundColor), PorterDuff.Mode.SRC_ATOP);
-            } else {
-                Drawable stars = ratingBar.getProgressDrawable();
-                DrawableCompat.setTint(stars, ContextCompat.getColor(context, builder.ratingBarColor));
-            }
+            LayerDrawable stars = (LayerDrawable) ratingBar.getProgressDrawable();
+            stars.getDrawable(2).setColorFilter(ContextCompat.getColor(context, builder.ratingBarColor), PorterDuff.Mode.SRC_ATOP);
+            stars.getDrawable(1).setColorFilter(ContextCompat.getColor(context, builder.ratingBarColor), PorterDuff.Mode.SRC_ATOP);
+            int ratingBarBackgroundColor = builder.ratingBarBackgroundColor != 0 ? builder.ratingBarBackgroundColor : R.color.grey_200;
+            stars.getDrawable(0).setColorFilter(ContextCompat.getColor(context, ratingBarBackgroundColor), PorterDuff.Mode.SRC_ATOP);
         }
 
         Drawable d = context.getPackageManager().getApplicationIcon(context.getApplicationInfo());
@@ -186,8 +179,8 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
     public void onRatingChanged(RatingBar ratingBar, float v, boolean b) {
 
 
+        boolean thresholdPassed = true;
         if (ratingBar.getRating() >= threshold) {
-            thresholdPassed = true;
 
             if (builder.ratingThresholdClearedListener == null) {
                 setRatingThresholdClearedListener();
@@ -285,6 +278,10 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
         }
     }
 
+    public void showWithoutSessionCheck() {
+        super.show();
+    }
+
     public void showFeedbackOnly() {
         super.show();
         openForm();
@@ -296,7 +293,7 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
             return true;
         }
 
-        sharedpreferences = context.getSharedPreferences(MyPrefs, Context.MODE_PRIVATE);
+        sharedpreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
 
         if (sharedpreferences.getBoolean(SHOW_NEVER, false)) {
             return false;
@@ -307,27 +304,27 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
         if (session == count) {
             SharedPreferences.Editor editor = sharedpreferences.edit();
             editor.putInt(SESSION_COUNT, 1);
-            editor.commit();
+            editor.apply();
             return true;
         } else if (session > count) {
             count++;
             SharedPreferences.Editor editor = sharedpreferences.edit();
             editor.putInt(SESSION_COUNT, count);
-            editor.commit();
+            editor.apply();
             return false;
         } else {
             SharedPreferences.Editor editor = sharedpreferences.edit();
             editor.putInt(SESSION_COUNT, 2);
-            editor.commit();
+            editor.apply();
             return false;
         }
     }
 
     private void showNever() {
-        sharedpreferences = context.getSharedPreferences(MyPrefs, Context.MODE_PRIVATE);
+        sharedpreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedpreferences.edit();
         editor.putBoolean(SHOW_NEVER, true);
-        editor.commit();
+        editor.apply();
     }
 
     public static class Builder {
@@ -393,11 +390,6 @@ public class RatingDialog extends AppCompatDialog implements RatingBar.OnRatingB
             this.title = title;
             return this;
         }
-
-        /*public Builder icon(int icon) {
-            this.icon = icon;
-            return this;
-        }*/
 
         public Builder icon(Drawable drawable) {
             this.drawable = drawable;

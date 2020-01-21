@@ -1,7 +1,7 @@
 package com.codemybrainsout.rating;
 
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.RelativeLayout;
@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        rlRate = (RelativeLayout) findViewById(R.id.rlRate);
+        rlRate = findViewById(R.id.rlRate);
         rlRate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
